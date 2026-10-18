@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cotas - Controle FIIs</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui,Arial}
+body{background:#0b1220;color:#e2e8f0;margin:0;padding:16px}
+h1{color:#22c55e;text-align:center;margin:8px 0}
+.card{background:#151e32;border:1px solid #1f2a44;border-radius:16px;padding:16px;margin:14px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input{flex:1;min-width:90px;background:#0b1220;border:1px solid #334155;color:#fff;padding:12px;border-radius:10px}
+.btn{background:#22c55e;color:#000;border:0;padding:12px 16px;border-radius:10px;font-weight:800;cursor:pointer}
+.btn2{background:#334155;color:#fff}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{color:#22c55e;text-align:left;font-size:13px;padding:8px}
+td{padding:10px 8px;border-top:1px solid #1f2a44}
+.badge{background:#22c55e20;color:#22c55e;padding:4px 8px;border-radius:20px;font-size:12px}
+.bar{height:12px;background:#0b1220;border-radius:20px;overflow:hidden;border:1px solid #1f2a44}
+.fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a)}
+.kpi{font-size:28px;font-weight:900;color:#22c55e}
+.small{font-size:12px;color:#94a3b8}
+</style>
+</head>
+<body>
+<h1>💰 Meu Controle de Cotas</h1>
+
+<div class="card">
+<div class="row">
+<div style="flex:1"><div class="small">Renda Atual / mês</div><div class="kpi" id="total">R$ 0,00</div></div>
+<div style="flex:1"><div class="small">Total Investido</div><div class="kpi" style="color:#fff" id="invest">R$ 0,00</div></div>
+</div>
+
+<div style="margin-top:14px"><div class="small">Meta R$1.000 = ~1.250 cotas (R$0,80 média) - <span id="p1txt">0%</span></div><div class="bar"><div class="fill" id="b1" style="width:0%"></div></div></div>
+<div style="margin-top:10px"><div class="small">Meta R$5.000 = ~6.250 cotas - <span id="p5txt">0%</span></div><div class="bar"><div class="fill" id="b5" style="width:0%"></div></div></div>
+</div>
+
+<div class="card">
+<h3 style="margin:0 0 10px 0">➕ Adicionar FII</h3>
+<div class="row">
+<input id="fii" placeholder="FII ex: HGLG11">
+<input id="qtd" type="number" placeholder="Qtd">
+<input id="preco" type="number" step="0.01" placeholder="Preço Médio">
+<input id="divi" type="number" step="0.01" placeholder="Dividendo ex: 0.80">
+<button class="btn" onclick="add()">Adicionar</button>
+</div>
+<div class="small" style="margin-top:8px">Fórmula: Renda = Qtd x Dividendo</div>
+</div>
+
+<div class="card">
+<div class="row" style="justify-content:space-between;align-items:center">
+<h3 style="margin:0">📊 Meus FIIs</h3>
+<button class="btn btn2" onclick="clearAll()">Limpar</button>
+</div>
+<div style="overflow:auto">
+<table id="tab">
+<tr><th>FII</th><th>Qtd</th><th>Preço Médio</th><th>Div/cota</th><th>Renda/mês</th><th></th></tr>
+</table>
+</div>
+</div>
+
+<div class="card">
+<h3>🧮 Calculadora Rápida</h3>
+<div class="row">
+<input id="cq" type="number" placeholder="Qtd cotas">
+<input id="cd" type="number" step="0.01" placeholder="Dividendo">
+<button class="btn" onclick="calc()">Calcular</button>
+</div>
+<div id="calcRes" class="kpi" style="font-size:20px;margin-top:10px"></div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem('fiis_v2')||'[{"f":"HGLG11","q":100,"p":160,"d":0.8},{"f":"MXRF11","q":200,"p":10.5,"d":0.1}]');
+
+function save(){localStorage.setItem('fiis_v2',JSON.stringify(data));render();}
+function add(){
+ let f=document.getElementById('fii').value.toUpperCase().trim();
+ let q=parseFloat(document.getElementById('qtd').value);
+ let p=parseFloat(document.getElementById('preco').value);
+ let d=parseFloat(document.getElementById('divi').value);
+ if(!f||!q||!d){alert('Preencha FII, Qtd e Dividendo');return;}
+ data.push({f,q,p:p||0,d}); 
+ document.getElementById('fii').value='';document.getElementById('qtd').value='';document.getElementById('preco').value='';document.getElementById('divi').value='';
+ save();
+}
+function del(i){data.splice(i,1);save();}
+function clearAll(){if(confirm('Apagar tudo?')){data=[];save();}}
+function calc(){
+ let q=parseFloat(document.getElementById('cq').value)||0;
+ let d=parseFloat(document.getElementById('cd').value)||0;
+ document.getElementById('calcRes').innerText='Renda: R$ '+(q*d).toFixed(2)+' / mês';
+}
+function render(){
+ let tab=document.getElementById('tab');
+ let html='<tr><th>FII</th><th>Qtd</th><th>Preço Médio</th><th>Div/cota</th><th>Renda/mês</th><th></th></tr>';
+ let total=0, invest=0;
+ data.forEach((x,i)=>{
+  let renda=x.q*x.d;
+  total+=renda;
+  invest+=x.q*(x.p||0);
+  html+=`<tr><td><span class="badge">${x.f}</span></td><td>${x.q}</td><td>R$ ${x.p.toFixed(2)}</td><td>R$ ${x.d.toFixed(2)}</td><td style="color:#22c55e;font-weight:bold">R$ ${renda.toFixed(2)}</td><td><button onclick="del(${i})" style="background:#ef4444;color:#fff;border:0;border-radius:6px;padding:6px 8px">X</button></td></tr>`;
+ });
+ tab.innerHTML=html;
+ document.getElementById('total').innerText='R$ '+total.toFixed(2);
+ document.getElementById('invest').innerText='R$ '+invest.toFixed(2);
+ let p1=Math.min(100,(total/1000)*100),p5=Math.min(100,(total/5000)*100);
+ document.getElementById('b1').style.width=p1+'%';document.getElementById('p1txt').innerText=p1.toFixed(1)+'%';
+ document.getElementById('b5').style.width=p5+'%';document.getElementById('p5txt').innerText=p5.toFixed(1)+'%';
+}
+render();
+</script>
+</body>
+</html>
